@@ -1,7 +1,14 @@
 from . import loadDLL
-from Oracle.ManagedDataAccess.Client import OracleConnection
+from .connections import Connection
+from Oracle.ManagedDataAccess.Client import OracleConnection 
+import logging
 
-def connect(host, user, password, servername, charset='utf-8', port=1521):
+logging.basicConfig(level=logging.DEBUG)
+
+def connect(host, user, password, servername, port=1521):
+    '''
+    get the oracle connection, return a connection without trans
+    '''
     conn = OracleConnection()
     conn.ConnectionString = '''Data Source=(
         DESCRIPTION=(
@@ -18,9 +25,8 @@ def connect(host, user, password, servername, charset='utf-8', port=1521):
         host=host,
         user=user,
         password=password,
-        charset=charset,
         port=port,
         servername=servername
     )
     conn.Open()
-    return conn
+    return Connection(conn)
