@@ -1,7 +1,8 @@
-from enum import Enum, unique
 import warnings
 from . import err
 import logging
+import re
+from collections import OrderedDict
 
 from Oracle.ManagedDataAccess.Client import OracleConnection, OracleCommand 
 
@@ -80,8 +81,8 @@ class Cursor(object):
     def fetchall(self):
         '''
         '''
-    
-    def execute(self, sql, *args):
+
+    def execute(self, sql, args=None):
         """Execute a query
 
         :param str query: Query to execute.
@@ -95,44 +96,48 @@ class Cursor(object):
         If args is a list or tuple, %s can be used as a placeholder in the query.
         If args is a dict, %(name)s can be used as a placeholder in the query.
         """
-        query = self.mogrify(sql, args)
-
-        result = self._query(query)
-        self._executed = query
+        sql, args = self.format(sql, args)
+        result = self._query(sql, args)
+        self._executed = sql
         return result
     
-    def mogrify(self, query, args=None):
-        """
-        Returns the exact string
-        """
-        conn = self._get_connection()
-        if args is not None:
-            query = query % self._escape_args(args)
-
-        return query
-    
-    def _escape_args(self, args):
-        if isinstance(args, (tuple, list)):
-            return tuple("'" + arg + "'" for arg in args)
+    def format(self, sql, args):
+        if args is None:
+            return sql, {}
+        
+        rsql = ""
+        rargs = OrderedDict()
+        if isinstance(args, (list, tuple)):
+            l = sql.split('%s')
+            pars = [':par' + str(i) for i in range(len(l)-1)]
+            for i in len(pars):
+                rsql += l[i] + pars[i]
+                rargs[':par' + str(i)] = args[i]
+            rsql += l[-1]
         elif isinstance(args, dict):
-            return dict((key, "'" + val + "'") for (key, val) in args.items())
-        else:
-            return "'" + args + "'"
-    
-    def _query(self, q):
+            rsql = sql
+            iters = re.finditer(sql, '%\(.*?\)s')
+            for i in iters:
+                par = sql[slice(*i.span())]
+                rsql = rsql.replace(par, ':' + par[2:-2])
+                args[':' + par[2,-2]] = args[par[2:-2]]
+        
+        return rsql, rargs
+
+    def _query(self, q, args):
         if self._logging_sql:
             logging.info(q)
         conn = self._get_connection()
-        self._last_executed = q
-        odr = conn.query(q)
-        self._do_get_result(odr)
+        self._comm = conn.query(q, args)
+
+        self._do_get_result(self._comm.ExecuteReader())
         return self.rowcount
 
     def _do_get_result(self, odr):
 
         self.rownumber = 0
         self._result = result = odr
-        self._rowcount = result.FetchSize
+        self._rowcount = result.RecordsAffected
         #self._description = result.description
         #self.lastrowid = result.insert_id
         #self._rows = result.rows
@@ -143,9 +148,6 @@ class Cursor(object):
             self._show_warnings()
 
     def _show_warnings(self):
-        if self._warnings_handled:
-            return
-        self._warnings_handled = True
         if self._result and (self._result.has_next or not self._result.warning_count):
             return
         ws = self._get_connection().show_warnings()

@@ -4,7 +4,7 @@ from . import err
 from .cursors import Cursor
 import logging
 
-from Oracle.ManagedDataAccess.Client import OracleConnection, OracleCommand 
+from Oracle.ManagedDataAccess.Client import OracleConnection, OracleCommand, OracleDbType
 import System
 
 
@@ -49,9 +49,11 @@ class Connection(object):
         '''
         return Cursor(self)
     
-    def query(self, q):
+    def query(self, q, args):
         comm = OracleCommand(q, self.__conn)
-        return comm.ExecuteReader()
+        for k, v in args.items():
+            comm.Parameters.Add(k, v)
+        return comm
     
     def create_transaction(self, isolation_level=System.Data.IsolationLevel.ReadCommitted):
         '''
