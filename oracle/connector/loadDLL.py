@@ -1,5 +1,5 @@
 '''
-load the Oracle.ManagedDataAccess assembly
+load the Oracle.ManagedDataAccess assembly with clr
 '''
 import os
 import clr

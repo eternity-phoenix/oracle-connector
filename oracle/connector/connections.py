@@ -39,6 +39,10 @@ class Connection(object):
         if not self.state is ConnectionState.closed:
             self.__conn.Close()
     
+    def _check_connection_state(self):
+        if self.state == ConnectionState.closed or self.state == ConnectionState.broken:
+            raise err.ProgrammingError('连接未打开')
+    
     @property
     def connectString(self):
         return self.__conn.ConnectionString
@@ -47,11 +51,13 @@ class Connection(object):
         '''
         get the cursor
         '''
+        self._check_connection_state()
         return Cursor(self)
     
-    def query(self, q, args):
-        comm = OracleCommand(q, self.__conn)
-        for k, v in args.items():
+    def _query(self, sqlformat):
+        self._check_connection_state()
+        comm = OracleCommand(sqlformat.sql, self.__conn)
+        for k, v in sqlformat.args.items():
             comm.Parameters.Add(k, v)
         return comm
     
@@ -59,6 +65,7 @@ class Connection(object):
         '''
         get a OracleTransactionConnection instance
         '''
+        self._check_connection_state()
         self.trans = self.__conn.BeginTransaction(isolation_level)
     
     def commit(self):
