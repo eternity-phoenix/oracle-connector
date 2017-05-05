@@ -35,10 +35,29 @@ class Test(unittest.TestCase):
         print(self.cursor.rowcount)
     
     def test_insert(self):
-        self.cursor.execute("insert into T (barcode, ver) values ('123', '123')")
+        self.cursor.execute("insert into T (barcode, ver) values (%s, %s)", ('1234', '45678'))
         print(self.cursor.fetchmany(dict_=True))
         print(self.cursor.rowcount)
     
+    def test_fetch_with_star(self):
+        self.cursor.execute('select * from T')
+        print(self.cursor.fetchall(dict_=True))
+        print(self.cursor.rowcount)
+    
+    def test_delete(self):
+        self.cursor.execute('delete from T where barcode=%s', ('123',))
+        print(self.cursor.fetchall(dict_=True))
+        print(self.cursor.rowcount)
+    
+    def test_create_table(self):
+        self.cursor.execute('create table TT ( T VARCHAR2(50) NULL)')
+        print(self.cursor.fetchall(dict_=True))
+        print(self.cursor.rowcount)
+    
+    def test_drop_table(self):
+        self.cursor.execute('drop table TT')
+        print(self.cursor.fetchall(dict_=True))
+        print(self.cursor.rowcount)
 
 if __name__ == '__main__':
     unittest.main()
