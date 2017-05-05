@@ -1,1 +1,5 @@
 __pycache__
+dist
+oracle_connector.egg-info
+oracle.egg-info
+oracle-connector-*
