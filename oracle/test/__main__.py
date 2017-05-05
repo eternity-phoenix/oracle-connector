@@ -35,12 +35,12 @@ class Test(unittest.TestCase):
         print(self.cursor.rowcount)
     
     def test_insert(self):
-        self.cursor.execute("insert into T (barcode, ver) values (%s, %s)", ('1234', '45678'))
+        self.cursor.execute("insert into T (barcode, ver) values (%s, %s)", ('1234', '45678')) # do not mistake the column's type
         print(self.cursor.fetchmany(dict_=True))
         print(self.cursor.rowcount)
     
     def test_fetch_with_star(self):
-        self.cursor.execute('select * from T')
+        self.cursor.execute("select T.*, '中文' CN from T")
         print(self.cursor.fetchall(dict_=True))
         print(self.cursor.rowcount)
     
