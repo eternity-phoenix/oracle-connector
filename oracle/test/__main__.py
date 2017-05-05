@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
         print(self.cursor.rowcount)
     
     def test_delete(self):
-        self.cursor.execute('delete from T where barcode=%s', ('123',))
+        self.cursor.execute('delete from T where barcode=%s', ('1234',))
         print(self.cursor.fetchall(dict_=True))
         print(self.cursor.rowcount)
     
@@ -58,6 +58,24 @@ class Test(unittest.TestCase):
         self.cursor.execute('drop table TT')
         print(self.cursor.fetchall(dict_=True))
         print(self.cursor.rowcount)
+    
+    def test_transaction_rollback(self):
+        self.conn.create_transaction()
+        self.cursor.execute("insert into T (barcode, ver) values('trans', 'trans')")
+        self.conn.rollback()
+        
+        self.cursor.execute("select * from T where barcode='trans'")
+        print(self.cursor.fetchall())
+
+    def test_transaction_commit(self):
+        self.conn.create_transaction()
+        self.cursor.execute("insert into T (barcode, ver) values('trans', 'trans')")
+        self.conn.commit()
+        
+        self.cursor.execute("select * from T where barcode='trans'")
+        print(self.cursor.fetchall())
+
+        self.cursor.execute("delete from T where barcode='trans'")
 
 if __name__ == '__main__':
     unittest.main()
